@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,28 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Incli: Vectorized Affinity</title>
     <link rel="stylesheet" href="./src/styles/index.css" />
-    <script type="module" src="/src/my-element.ts"></script>
+    <script type="module" src="/src/incling.ts"></script>
     <script type="module" src="/src/lib.ts"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+    />
   </head>
   <body>
+    <div class="stage content p-4">
+      <div class="columns">
+        <div class="column">
+          <incli-everything>
+            <div class="m-4 p-4">test slot content, if we need it</div>
+          </incli-everything>
+        </div>
+        <div id="embedding-result" class="column p-4" style="font-size: 9px">
+          Vector Output will be here
+        </div>
+        <div class="column">
+          <div class="card p-4 has-background-warning">
+            <h3>TBD</h3>
 
-
-    <div class="content">
-    <h3>TBD</h3>
-
-    <ul>
-      <li>import cookie</li>
-      <li>save new preference</li>
-      <li>recall preference by keyword</li>
-      <li>recall preference by keyword (vectorized)</li>
-      <li>compare preferences</li>
-      <li>find relevant preferences (to string input)</li>
-    </ul>
-
-  </div>
-
-    <my-element>
-      <h1>test</h1>
-    </my-element>
+            <ul>
+              <li>import cookie</li>
+              <li>save new preference</li>
+              <li>recall preference by keyword</li>
+              <li>recall preference by keyword (vectorized)</li>
+              <li>compare preferences</li>
+              <li>find relevant preferences (to string input)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

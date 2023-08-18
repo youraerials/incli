@@ -1,0 +1,25 @@
+/*
+Theme colors
+#2F4858
+#33658A
+#86BBD8
+#F6AE2D
+#F26419
+
+*/
+
+html,
+body {
+  background-color: #2f4858 !important;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+.stage {
+  background: #2f4858;
+  font-family: monospace;
+  color: white;
+  width: 100vw;
+  height: 100%;
+}
