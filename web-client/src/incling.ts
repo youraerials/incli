@@ -1,5 +1,6 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
+
 // import litLogo from "./assets/lit.svg";
 // import viteLogo from "/vite.svg";
 
@@ -25,6 +26,9 @@ export class IncliEverything extends LitElement {
 
   @property({ type: String })
   affinityText = "";
+
+  @property({ type: String })
+  searchText = "";
 
   @property({ type: Array })
   embeddingResult = [];
@@ -84,7 +88,31 @@ ${this.affinityText}</textarea
       <div class="card p-4 mt-4">
         <div class="card-content">
           <div class="field">
-            <p class="help">Results</p>
+            <p class="help">Search</p>
+          </div>
+          <div class="field">
+            <label class="label">Search Affinity</label>
+            <div class="control">
+              <textarea
+                class="textarea"
+                placeholder="Search text..."
+                @change=${this.updateSearch}
+              >
+${this.searchText}</textarea
+              >
+            </div>
+            <p class="help" style="font-size: 9px">
+              Search everything by keyphrase here
+            </p>
+          </div>
+
+          <div class="control">
+            <button
+              class="button is-primary ${this.loading ? "is-loading" : ""}"
+              @click=${this._searchAffinity}
+            >
+              Save
+            </button>
           </div>
 
           <div class="field">results here...</div>
@@ -96,6 +124,54 @@ ${this.affinityText}</textarea
   updateAffinity(e: any) {
     this.affinityText = e.srcElement.value;
     console.log(e.srcElement.value);
+  }
+
+  updateSearch(e: any) {
+    this.searchText = e.srcElement.value;
+    console.log(e.srcElement.value);
+  }
+
+  private async _searchAffinity(evt: any) {
+    console.log("running search with " + this.searchText);
+
+    this.loading = true;
+
+    // build vector from search query
+    const result = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_OAIKEY}`,
+      },
+      body: JSON.stringify({
+        input: this.searchText,
+        model: "text-embedding-ada-002",
+      }),
+    });
+
+    const searchJson = await result.json();
+    const searchVector = searchJson.data[0].embedding;
+
+    // TBD fetch to local server
+    // to do the pinecone thing
+
+    const searchResult = await fetch(
+      "http://127.0.0.1:61082/api/affinity/search",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          vectors: searchVector,
+          namespace: this.searchText,
+        }),
+      }
+    );
+
+    console.log(searchResult);
+
+    this.loading = false;
   }
 
   private async _setAffinity(evt: any) {
@@ -119,7 +195,7 @@ ${this.affinityText}</textarea
 
     const jsonData = await result.json();
     this.embeddingResult = jsonData.data[0].embedding;
-
+    console.log("dimensions " + this.embeddingResult.length);
     console.log("did we set it?");
 
     console.log(this.embeddingResult);
@@ -130,6 +206,19 @@ ${this.affinityText}</textarea
         /\,/g,
         ", "
       );
+
+    const setResult = await fetch("http://127.0.0.1:61082/api/affinity/set", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        vectors: this.embeddingResult,
+        namespace: this.affinityText,
+      }),
+    });
+
+    console.log(setResult);
 
     this.loading = false;
   }
