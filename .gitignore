@@ -25,3 +25,4 @@ dist-ssr
 src/.env
 .env
 incli-workers/.dev.vars
+workers/.dev.vars
