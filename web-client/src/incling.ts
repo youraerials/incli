@@ -137,26 +137,24 @@ ${this.searchText}</textarea
     this.loading = true;
 
     // build vector from search query
-    const result = await fetch("https://api.openai.com/v1/embeddings", {
+    const result = await fetch("http://127.0.0.1:8787/api/affinity/vector", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_OAIKEY}`,
       },
       body: JSON.stringify({
-        input: this.searchText,
-        model: "text-embedding-ada-002",
+        affinityText: this.searchText,
       }),
     });
 
     const searchJson = await result.json();
-    const searchVector = searchJson.data[0].embedding;
+    const searchVector = searchJson.embeddingResult;
 
     // TBD fetch to local server
     // to do the pinecone thing
 
     const searchResult = await fetch(
-      "http://127.0.0.1:61082/api/affinity/search",
+      "http://127.0.0.1:8787/api/affinity/search",
       {
         method: "POST",
         headers: {
@@ -164,7 +162,6 @@ ${this.searchText}</textarea
         },
         body: JSON.stringify({
           vectors: searchVector,
-          namespace: this.searchText,
         }),
       }
     );
@@ -181,24 +178,25 @@ ${this.searchText}</textarea
 
     // note that this request is using a throw-away key
     // we know this can't be used client side
-    const result = await fetch("https://api.openai.com/v1/embeddings", {
+    const result = await fetch("http://127.0.0.1:8787/api/affinity/vector", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_OAIKEY}`,
       },
       body: JSON.stringify({
-        input: this.affinityText,
-        model: "text-embedding-ada-002",
+        affinityText: this.affinityText,
       }),
     });
 
     const jsonData = await result.json();
-    this.embeddingResult = jsonData.data[0].embedding;
-    console.log("dimensions " + this.embeddingResult.length);
-    console.log("did we set it?");
 
-    console.log(this.embeddingResult);
+    console.log(jsonData);
+
+    this.embeddingResult = jsonData.embeddingResult;
+    console.log("dimensions " + this.embeddingResult.length);
+    console.log("did we set it for " + jsonData.text);
+
+    console.log(this.embeddingResult.length);
 
     const outputTarget = document.getElementById("embedding-result");
     if (outputTarget)
@@ -207,14 +205,13 @@ ${this.searchText}</textarea
         ", "
       );
 
-    const setResult = await fetch("http://127.0.0.1:61082/api/affinity/set", {
+    const setResult = await fetch("http://127.0.0.1:8787/api/affinity/set", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         vectors: this.embeddingResult,
-        namespace: this.affinityText,
       }),
     });
 

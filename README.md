@@ -23,9 +23,13 @@ to start your local server. This will bring up the little web component test fra
 
 ## Reference Server
 
-The reference server is written as a Cloudflare worker in TypeScript.  You can deploy that
+The reference server is written as a Cloudflare worker in TypeScript. You can deploy that
 as-is or you can port it to a server envirnment you like better.
 
-If you have Wrangler set up locally, you can run this server locally, too!  Remember that you will need to devine a PINECONE_KEY in .env format in a file called .dev.vars at the root of the incli-workers directory, peer to wrangler.toml
+If you have Wrangler set up locally, you can run this server locally, too! Remember that you will need to define variables for
 
+- PINECONE_KEY - your pinecone secret key
+- PINECONE_ENV - your pinecone env
+- OAIKEY - your open ai key
 
+in ".env" format in a file called .dev.vars at the root of the incli-workers directory, peer to wrangler.toml

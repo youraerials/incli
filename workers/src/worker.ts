@@ -1,16 +1,22 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import {
+	error, // creates error responses
+	json, // creates JSON responses
+	Router,
+} from 'itty-router';
+import { createCors } from 'itty-cors';
+import { missing } from 'itty-router-extras';
 
-import handleProxy from './proxy';
-import handleRedirect from './redirect';
-import apiRouter from './router';
+import { PineconeClient, UpsertRequest } from '@pinecone-database/pinecone';
+
+// permissive CORS setup
+const { preflight, corsify } = createCors({
+	methods: ['GET', 'POST', 'DELETE'], // GET is included by default... omit this if only using GET
+	origins: ['*'], // defaults to allow all (most common).  Restrict if needed.
+	maxAge: 3600,
+	headers: {
+		'my-custom-header': 'will be injected with each CORS-enabled response',
+	},
+});
 
 // typing for ENV values
 // note that these must be SET server-side in the
@@ -21,37 +27,111 @@ import apiRouter from './router';
 export interface Env {
 	PINECONE_KEY: string;
 	PINECONE_ENV: string;
+	OAIKEY: string;
 }
+
+let router = Router();
+
+// GET collection index
+router
+	.all('*', preflight)
+	.get('/api/todos', async (request, env, ctx) => {
+		console.log(env);
+		return new Response('Todos Index!');
+	})
+
+	.post('/api/affinity/vector', async (request, env) => {
+		const content = (await request.json()) as any;
+
+		const result = await fetch('https://api.openai.com/v1/embeddings', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${env.OAIKEY}`,
+			},
+			body: JSON.stringify({
+				input: content.affinityText,
+				model: 'text-embedding-ada-002',
+			}),
+		});
+
+		// TBD error check and all that jazz
+		const jsonData = (await result.json()) as any;
+		const embeddingResult = jsonData.data[0].embedding;
+		console.log('dimensions ' + embeddingResult.length);
+
+		return json({
+			text: content.affinityText,
+			embeddingResult,
+		});
+	})
+
+	.post('/api/affinity/set', async (request, env) => {
+		const content = (await request.json()) as any;
+
+		// Create a client
+		const client = new PineconeClient();
+
+		// Initialize the client
+		await client.init({
+			apiKey: env.PINECONE_KEY,
+			environment: env.PINECONE_ENV,
+		});
+
+		const index = client.Index('inkli');
+
+		// TBD probably want to break down into fields e.g.
+		// "id": "uuid", "metadata": {"context": "nike"}, "values": [vectors]
+		const upsertRequest: UpsertRequest = {
+			vectors: content.vectors,
+		};
+		const result = await index.upsert({ upsertRequest });
+
+		return json({
+			result,
+		});
+	})
+
+	.post('/api/affinity/search', async (request, env) => {
+		const content = (await request.json()) as any;
+
+		// Create a client
+		const client = new PineconeClient();
+
+		// Initialize the client
+		await client.init({
+			apiKey: env.PINECONE_KEY,
+			environment: env.PINECONE_ENV,
+		});
+
+		const index = client.Index('inkli');
+
+		const queryResult = await index.query({
+			queryRequest: {
+				vector: content.searchVector,
+				includeMetadata: true,
+				includeValues: true,
+				// filter: {
+				//   section: { $eq: section },
+				// },
+				topK: 10,
+			},
+		});
+
+		console.log(queryResult);
+
+		return new Response('Creating: ' + JSON.stringify(queryResult));
+	})
+	.all('*', () => missing('That does not look like a valid API endpoint'));
 
 // Export a default object containing event handlers
 export default {
 	// The fetch handler is invoked when this worker receives a HTTP(S) request
 	// and should return a Response (optionally wrapped in a Promise)
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		// You'll find it helpful to parse the request.url string into a URL object. Learn more at https://developer.mozilla.org/en-US/docs/Web/API/URL
-		const url = new URL(request.url);
-
-		// You can get pretty far with simple logic like if/switch-statements
-		switch (url.pathname) {
-			case '/redirect':
-				return handleRedirect.fetch(request, env, ctx);
-
-			case '/proxy':
-				return handleProxy.fetch(request, env, ctx);
-		}
-
-		if (url.pathname.startsWith('/api/')) {
-			// You can also use more robust routing
-			return apiRouter.handle(request, env, ctx);
-		}
-
-		return new Response(
-			`Try making requests to:
-      <ul>
-      <li><code><a href="/redirect?redirectUrl=https://example.com/">/redirect?redirectUrl=https://example.com/</a></code>,</li>
-      <li><code><a href="/proxy?modify&proxyUrl=https://example.com/">/proxy?modify&proxyUrl=https://example.com/</a></code>, or</li>
-      <li><code><a href="/api/todos">/api/todos</a></code></li>`,
-			{ headers: { 'Content-Type': 'text/html' } }
-		);
+		return await router
+			.handle(request, env, ctx)
+			.catch((err) => error(500, err.stack))
+			.then(corsify);
 	},
 };
