@@ -136,29 +136,41 @@ router
 		// Create a client
 		const client = new PineconeClient();
 
-		// Initialize the client
-		await client.init({
-			apiKey: env.PINECONE_KEY,
-			environment: env.PINECONE_ENV,
-		});
+		try {
 
-		const index = client.Index('inkli');
+			// Initialize the client
+			await client.init({
+				apiKey: env.PINECONE_KEY,
+				environment: env.PINECONE_ENV,
+			});
 
-		const queryResult = await index.query({
-			queryRequest: {
-				vector: content.searchVector,
-				includeMetadata: true,
-				includeValues: true,
-				// filter: {
-				//   section: { $eq: section },
-				// },
-				topK: 10,
-			},
-		});
+			const index = client.Index('inkli');
 
-		console.log(queryResult);
+			console.log(content.searchVectors)
 
-		return new Response('Creating: ' + JSON.stringify(queryResult));
+			const queryResult = await index.query({
+				queryRequest: {
+					vector: content.searchVectors,
+					includeMetadata: true,
+					includeValues: true,
+					// filter: {
+					// 	value: { $eq: content.searchText },
+					// },
+					topK: 3,
+				},
+			});
+
+			console.log('')
+			console.log(queryResult);
+
+			return json(queryResult);
+
+		} catch (er: any) {
+			console.log(er.message);
+			return json({
+				error: er.message
+			});
+		}
 	})
 	.all('*', () => missing('That does not look like a valid API endpoint'));
 

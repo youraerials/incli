@@ -118,7 +118,7 @@ ${this.searchText}</textarea
               class="button is-primary ${this.loading ? "is-loading" : ""}"
               @click=${this._searchAffinity}
             >
-              Save
+              Search
             </button>
           </div>
 
@@ -160,7 +160,7 @@ ${this.searchText}</textarea
     });
 
     const searchJson = await result.json();
-    const searchVector = searchJson.embeddingResult;
+    const searchVectors = searchJson.embeddingResult;
 
     // TBD fetch to local server
     // to do the pinecone thing
@@ -173,12 +173,15 @@ ${this.searchText}</textarea
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          vectors: searchVector,
+          searchText: this.searchText,
+          searchVectors: searchVectors,
         }),
       }
     );
 
-    console.log(searchResult);
+    const results = await searchResult.json()
+
+    console.log(results);
 
     this.loading = false;
   }
