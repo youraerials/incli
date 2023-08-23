@@ -77,8 +77,6 @@ ${this.searchText}</textarea
               Search
             </button>
           </div>
-
-          <div class="field">results here...</div>
         </div>
       </div>
 
