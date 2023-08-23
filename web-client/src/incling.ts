@@ -25,7 +25,10 @@ export class IncliEverything extends LitElement {
   count = 0;
 
   @property({ type: String })
-  affinityText = "";
+  affinityKey = "";
+
+  @property({ type: String })
+  affinityValue = "";
 
   @property({ type: String })
   searchText = "";
@@ -59,12 +62,16 @@ export class IncliEverything extends LitElement {
           <div class="field">
             <label class="label">Set Affinity</label>
             <div class="control">
+              <input class="input" placeholder="Affinity Key (cookie key)"
+                @change=${this.updateAffinityKey} value="${this.affinityKey}" />
+            </div>
+            <div class="control">
               <textarea
                 class="textarea"
-                placeholder="Affinity text..."
-                @change=${this.updateAffinity}
+                placeholder="Affinity value"
+                @change=${this.updateAffinityValue}
               >
-${this.affinityText}</textarea
+${this.affinityValue}</textarea
               >
             </div>
             <p class="help" style="font-size: 9px">
@@ -121,8 +128,13 @@ ${this.searchText}</textarea
     `;
   }
 
-  updateAffinity(e: any) {
-    this.affinityText = e.srcElement.value;
+  updateAffinityValue(e: any) {
+    this.affinityValue = e.srcElement.value;
+    console.log(e.srcElement.value);
+  }
+
+  updateAffinityKey(e: any) {
+    this.affinityKey = e.srcElement.value;
     console.log(e.srcElement.value);
   }
 
@@ -137,7 +149,7 @@ ${this.searchText}</textarea
     this.loading = true;
 
     // build vector from search query
-    const result = await fetch("http://127.0.0.1:8787/api/affinity/vector", {
+    const result = await fetch("http://127.0.0.1:8788/api/affinity/vector", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,7 +166,7 @@ ${this.searchText}</textarea
     // to do the pinecone thing
 
     const searchResult = await fetch(
-      "http://127.0.0.1:8787/api/affinity/search",
+      "http://127.0.0.1:8788/api/affinity/search",
       {
         method: "POST",
         headers: {
@@ -172,19 +184,20 @@ ${this.searchText}</textarea
   }
 
   private async _setAffinity(evt: any) {
-    console.log("affinity? " + this.affinityText);
+    console.log("affinity? ", this.affinityKey, this.affinityValue);
 
     this.loading = true;
 
     // note that this request is using a throw-away key
     // we know this can't be used client side
-    const result = await fetch("http://127.0.0.1:8787/api/affinity/vector", {
+    const result = await fetch("http://127.0.0.1:8788/api/affinity/vector", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        affinityText: this.affinityText,
+        affinityKey: this.affinityKey,
+        affinityValue: this.affinityValue,
       }),
     });
 
@@ -205,17 +218,21 @@ ${this.searchText}</textarea
         ", "
       );
 
-    const setResult = await fetch("http://127.0.0.1:8787/api/affinity/set", {
+    const setResult = await fetch("http://127.0.0.1:8788/api/affinity/set", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        affinityKey: this.affinityKey,
+        affinityValue: this.affinityValue,
         vectors: this.embeddingResult,
       }),
     });
 
     console.log(setResult);
+
+    alert('affinity set!');
 
     this.loading = false;
   }

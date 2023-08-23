@@ -22,7 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-src/.env
 .env
-incli-workers/.dev.vars
-workers/.dev.vars
+.dev.vars

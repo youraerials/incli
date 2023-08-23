@@ -6,7 +6,7 @@ compatibility_date = "2023-08-14"
 
 [dev]
 ip = "127.0.0.1"
-port = 8787
+port = 8788
 local_protocol = "http"
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)

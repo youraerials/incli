@@ -35,35 +35,55 @@ let router = Router();
 // GET collection index
 router
 	.all('*', preflight)
-	.get('/api/todos', async (request, env, ctx) => {
-		console.log(env);
-		return new Response('Todos Index!');
-	})
 
 	.post('/api/affinity/vector', async (request, env) => {
 		const content = (await request.json()) as any;
 
-		const result = await fetch('https://api.openai.com/v1/embeddings', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${env.OAIKEY}`,
-			},
-			body: JSON.stringify({
-				input: content.affinityText,
-				model: 'text-embedding-ada-002',
-			}),
-		});
+		if (!env.OAIKEY) {
 
-		// TBD error check and all that jazz
-		const jsonData = (await result.json()) as any;
-		const embeddingResult = jsonData.data[0].embedding;
-		console.log('dimensions ' + embeddingResult.length);
+			console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   HEY!  you need a .dev.vars file with your ENV in it!
+	 ...I'm not psychic... yet.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+`);
+			return json({
+				error: 'HEY!  you need a .dev.vars file with your ENV in it!'
+			});
+		}
 
-		return json({
-			text: content.affinityText,
-			embeddingResult,
-		});
+		try {
+
+			const result = await fetch('https://api.openai.com/v1/embeddings', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${env.OAIKEY}`,
+				},
+				body: JSON.stringify({
+					input: content.affinityKey + ' = ' + content.affinityValue, // should we vec the KV pair or just the val?
+					model: 'text-embedding-ada-002',
+				}),
+			});
+
+			// TBD error check and all that jazz
+			const jsonData = (await result.json()) as any;
+
+			console.log(JSON.stringify(jsonData))
+			const embeddingResult = jsonData.data[0].embedding;
+			console.log('dimensions ' + embeddingResult.length);
+
+			return json({
+				text: content.affinityText,
+				embeddingResult,
+			});
+
+		} catch (er: any) {
+			console.log(er.message);
+			return json({
+				error: er.message
+			});
+		}
+
 	})
 
 	.post('/api/affinity/set', async (request, env) => {
@@ -72,24 +92,42 @@ router
 		// Create a client
 		const client = new PineconeClient();
 
-		// Initialize the client
-		await client.init({
-			apiKey: env.PINECONE_KEY,
-			environment: env.PINECONE_ENV,
-		});
+		try {
 
-		const index = client.Index('inkli');
+			// Initialize the client
+			await client.init({
+				apiKey: env.PINECONE_KEY,
+				environment: env.PINECONE_ENV,
+			});
 
-		// TBD probably want to break down into fields e.g.
-		// "id": "uuid", "metadata": {"context": "nike"}, "values": [vectors]
-		const upsertRequest: UpsertRequest = {
-			vectors: content.vectors,
-		};
-		const result = await index.upsert({ upsertRequest });
+			const index = client.Index('inkli');
 
-		return json({
-			result,
-		});
+			// TBD probably want to add some more granular metadata
+			let upsertRequest: UpsertRequest = {
+				vectors: [
+					{
+						id: content.affinityKey,
+						metadata: { name: 'cookie', key: content.affinityKey, value: content.affinityValue },
+						values: content.vectors
+					}
+				],
+				// namespace: 'cookies' // FYI the free pinecone tier doesn't support namespaces
+			};
+
+			const result = await index.upsert({ upsertRequest });
+
+			console.log(JSON.stringify(result));
+
+			return json({
+				result
+			});
+
+		} catch (er: any) {
+			console.log(er.message);
+			return json({
+				error: er.message
+			});
+		}
 	})
 
 	.post('/api/affinity/search', async (request, env) => {
