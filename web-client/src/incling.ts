@@ -45,17 +45,42 @@ export class IncliEverything extends LitElement {
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
       />
-      <h2>
+      <div class="is-size-7">
         The idea here is to be a tiny reference widget that can do all the
         things in the "Inkling Protocol (name TBD)"
-      </h2>
-      <slot></slot>
-      <div class="card p-4">
-        <button class="button" @click=${this._onClick} part="button">
-          count is ${this.count}
-        </button>
       </div>
-      <p class="read-the-docs">${this.docsHint}</p>
+      <slot></slot>
+
+      <div class="card p-4 mb-4">
+        <div class="card-content">
+          <div class="field">
+            <label class="label">Search Affinity</label>
+            <div class="control">
+              <textarea
+                class="textarea"
+                placeholder="Search text..."
+                @change=${this.updateSearch}
+              >
+${this.searchText}</textarea
+              >
+            </div>
+            <p class="help" style="font-size: 9px">
+              Search everything by keyphrase here
+            </p>
+          </div>
+
+          <div class="control">
+            <button
+              class="button is-primary ${this.loading ? "is-loading" : ""}"
+              @click=${this._searchAffinity}
+            >
+              Search
+            </button>
+          </div>
+
+          <div class="field">results here...</div>
+        </div>
+      </div>
 
       <div class="card p-4">
         <div class="card-content">
@@ -89,40 +114,6 @@ ${this.affinityValue}</textarea
               Save
             </button>
           </div>
-        </div>
-      </div>
-
-      <div class="card p-4 mt-4">
-        <div class="card-content">
-          <div class="field">
-            <p class="help">Search</p>
-          </div>
-          <div class="field">
-            <label class="label">Search Affinity</label>
-            <div class="control">
-              <textarea
-                class="textarea"
-                placeholder="Search text..."
-                @change=${this.updateSearch}
-              >
-${this.searchText}</textarea
-              >
-            </div>
-            <p class="help" style="font-size: 9px">
-              Search everything by keyphrase here
-            </p>
-          </div>
-
-          <div class="control">
-            <button
-              class="button is-primary ${this.loading ? "is-loading" : ""}"
-              @click=${this._searchAffinity}
-            >
-              Search
-            </button>
-          </div>
-
-          <div class="field">results here...</div>
         </div>
       </div>
     `;
@@ -183,6 +174,22 @@ ${this.searchText}</textarea
 
     console.log(results);
 
+    const outputTarget = document.getElementById("embedding-result");
+    if (outputTarget) {
+      outputTarget.innerHTML = '<h3>RESULTS</h3>';
+
+      results.matches.forEach(match => {
+        outputTarget.innerHTML += `
+        <ul class='mb-4'>
+          <li>id: ${match.id}</li>
+          <li>id: ${match.metadata.key}</li>
+          <li>id: ${match.metadata.value}</li>
+        </ul>
+        `;
+      });
+
+    }
+    // outputTarget.innerHTML = `${JSON.stringify(results)}}`;
     this.loading = false;
   }
 
@@ -216,10 +223,7 @@ ${this.searchText}</textarea
 
     const outputTarget = document.getElementById("embedding-result");
     if (outputTarget)
-      outputTarget.innerHTML = JSON.stringify(this.embeddingResult).replace(
-        /\,/g,
-        ", "
-      );
+      outputTarget.innerHTML = `${this.embeddingResult.length} vectors created`;
 
     const setResult = await fetch("http://127.0.0.1:8788/api/affinity/set", {
       method: "POST",

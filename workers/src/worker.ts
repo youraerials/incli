@@ -146,13 +146,11 @@ router
 
 			const index = client.Index('inkli');
 
-			console.log(content.searchVectors)
-
 			const queryResult = await index.query({
 				queryRequest: {
 					vector: content.searchVectors,
 					includeMetadata: true,
-					includeValues: true,
+					includeValues: false,
 					// filter: {
 					// 	value: { $eq: content.searchText },
 					// },
