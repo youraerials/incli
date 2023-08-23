@@ -144,7 +144,7 @@ ${this.affinityValue}</textarea
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        affinityText: this.searchText,
+        vectorText: this.searchText,
       }),
     });
 
@@ -170,18 +170,19 @@ ${this.affinityValue}</textarea
 
     const results = await searchResult.json()
 
+
     console.log(results);
 
     const outputTarget = document.getElementById("embedding-result");
     if (outputTarget) {
       outputTarget.innerHTML = '<h3>RESULTS</h3>';
 
-      results.matches.forEach(match => {
+      results.matches.forEach((match: any) => {
         outputTarget.innerHTML += `
         <ul class='mb-4'>
           <li>id: ${match.id}</li>
-          <li>id: ${match.metadata.key}</li>
-          <li>id: ${match.metadata.value}</li>
+          <li>key: ${match.metadata.key}</li>
+          <li>value: ${match.metadata.value}</li>
         </ul>
         `;
       });
@@ -205,7 +206,7 @@ ${this.affinityValue}</textarea
       },
       body: JSON.stringify({
         affinityKey: this.affinityKey,
-        affinityValue: this.affinityValue,
+        vectorText: this.affinityValue,
       }),
     });
 
@@ -235,7 +236,8 @@ ${this.affinityValue}</textarea
       }),
     });
 
-    console.log(setResult);
+    const resultJson = await setResult.json();
+    console.log(resultJson);
 
     alert('affinity set!');
 

@@ -53,6 +53,7 @@ router
 
 		try {
 
+			console.log('creating vector for: ' + content.vectorText)
 			const result = await fetch('https://api.openai.com/v1/embeddings', {
 				method: 'POST',
 				headers: {
@@ -60,7 +61,7 @@ router
 					Authorization: `Bearer ${env.OAIKEY}`,
 				},
 				body: JSON.stringify({
-					input: content.affinityKey + ' = ' + content.affinityValue, // should we vec the KV pair or just the val?
+					input: content.vectorText, // should we vec the KV pair or just the val?
 					model: 'text-embedding-ada-002',
 				}),
 			});
@@ -69,11 +70,13 @@ router
 			const jsonData = (await result.json()) as any;
 
 			console.log(JSON.stringify(jsonData))
+
 			const embeddingResult = jsonData.data[0].embedding;
 			console.log('dimensions ' + embeddingResult.length);
 
 			return json({
-				text: content.affinityText,
+				key: content.affinityKey,
+				text: content.affinityValue,
 				embeddingResult,
 			});
 
@@ -103,6 +106,8 @@ router
 			const index = client.Index('inkli');
 
 			// TBD probably want to add some more granular metadata
+
+			console.log('vectors: ' + content.vectors.length);
 			let upsertRequest: UpsertRequest = {
 				vectors: [
 					{
@@ -136,6 +141,8 @@ router
 		// Create a client
 		const client = new PineconeClient();
 
+		console.log('searching ' + content.searchText + ' with ' + content.searchVectors.length);
+
 		try {
 
 			// Initialize the client
@@ -150,7 +157,7 @@ router
 				queryRequest: {
 					vector: content.searchVectors,
 					includeMetadata: true,
-					includeValues: false,
+					includeValues: true,
 					// filter: {
 					// 	value: { $eq: content.searchText },
 					// },
